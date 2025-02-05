@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="w-full max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 mb-6">
+    <!-- Supplier Information -->
+    <h1 class="text-2xl font-bold text-gray-700 mb-4 text-center bg-blue-100 p-2 rounded-lg">
+        {{ supplier.supplier_name }}
+    </h1>    <p class="text-lg text-gray-600 mb-6 text-center">
+        <strong>Remaining Balance:</strong> 
+        <span class="font-semibold {% if remaining_balance > 0 %}text-red-500{% else %}text-green-500{% endif %}">
+            ₹{{ remaining_balance }}
+        </span>
+    </p>
+
+    <!-- Transactions Section -->
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Transactions</h2>
+
+    <!-- Filter Form -->
+    <form method="get" class="space-y-4 sm:space-y-2 mb-6">
+        <input 
+            type="text" 
+            name="search" 
+            placeholder="Search by description" 
+            value="{{ search }}" 
+            class="w-full p-3 border rounded-lg shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+
+        <div class="flex flex-col sm:flex-row sm:space-x-4">
+            <div class="flex flex-col w-full sm:w-1/2">
+                <label for="start-date" class="text-sm font-medium text-gray-600 mb-1">Start Date:</label>
+                <input 
+                    type="date" 
+                    name="start_date" 
+                    id="start-date" 
+                    class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                    value="{{ start_date }}"
+                >
+            </div>
+            <div class="flex flex-col w-full sm:w-1/2">
+                <label for="end-date" class="text-sm font-medium text-gray-600 mb-1">End Date:</label>
+                <input 
+                    type="date" 
+                    name="end_date" 
+                    id="end-date" 
+                    class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                    value="{{ end_date }}"
+                >
+            </div>
+        </div>
+
+        <select 
+            name="transaction_type" 
+            class="w-full sm:w-auto p-3 border rounded-lg shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+            <option value="all" {% if transaction_type == 'all' %}selected{% endif %}>All</option>
+            <option value="credit" {% if transaction_type == 'credit' %}selected{% endif %}>Credit</option>
+            <option value="debit" {% if transaction_type == 'debit' %}selected{% endif %}>Debit</option>
+        </select>
+
+        <button 
+            type="submit" 
+            class="w-full sm:w-auto p-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+            Apply Filters
+        </button>
+    </form>
+
+    <!-- Transaction Table -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full mt-6 border-separate border-spacing-2">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="px-4 py-2 text-left font-medium text-gray-700">Date</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-700">Description</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-700">Credit</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-700">Debit</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-700">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2 text-sm sm:text-base text-gray-700">
+                        {% if transaction.date %}
+                            {% if transaction.date is string %}
+                                {{ transaction.date }}
+                            {% else %}
+                                {{ transaction.date.strftime('%Y-%m-%d') }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-2 text-sm sm:text-base text-gray-700">{{ transaction.description }}</td>
+                    <td class="px-4 py-2 text-sm sm:text-base text-gray-700">{{ transaction.credit if 'credit' in transaction else 0 }}</td>
+                    <td class="px-4 py-2 text-sm sm:text-base text-gray-700">{{ transaction.debit if 'debit' in transaction else 0 }}</td>
+                    <td class="px-4 py-2">
+                        <a 
+                            href="/transaction/edit/{{ transaction._id }}" 
+                            class="text-yellow-500 hover:text-yellow-700 text-sm sm:text-base"
+                        >
+                            Edit
+                        </a>
+                        <a 
+                            href="/transaction/delete/{{ transaction._id }}" 
+                            class="text-red-500 hover:text-red-700 text-sm sm:text-base ml-2" 
+                            onclick="return confirm('Are you sure?')"
+                        >
+                            Delete
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Total Credit/Debit -->
+    <div class="mt-6">
+        <h3 class="text-xl font-semibold text-gray-700">Total Credit: ₹{{ total_credit }}</h3>
+        <h3 class="text-xl font-semibold text-gray-700">Total Debit: ₹{{ total_debit }}</h3>
+    </div>
+
+    <!-- Add New Transaction Form with Background -->
+    <div class="mt-8 p-6 bg-gray-100 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Add New Transaction</h2>
+        <form method="post" action="/customer/{{ supplier._id }}/add_transaction" class="space-y-4 sm:space-y-3">
+            <textarea 
+                name="description" 
+                placeholder="Description" 
+                required 
+                class="w-full p-3 border rounded-lg shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            ></textarea>
+            <input 
+                type="number" 
+                name="credit" 
+                placeholder="Credit (₹)" 
+                class="w-full p-3 border rounded-lg shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+            <input 
+                type="number" 
+                name="debit" 
+                placeholder="Debit (₹)" 
+                class="w-full p-3 border rounded-lg shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+            <input 
+                type="date" 
+                name="date" 
+                value="{{ today_date.strftime('%Y-%m-%d') }}" 
+                class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+            <button 
+                type="submit" 
+                class="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 mt-2 sm:w-auto"
+            >
+                Add Transaction
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

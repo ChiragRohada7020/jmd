@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-gray-100 min-h-screen flex flex-col items-center justify-center mt-0 pt-0 ">
+
+    <!-- Header -->
+    <header class="w-full max-w-lg bg-white shadow-md rounded-lg p-6 mb-6 ">
+        <h1 class="text-2xl font-bold text-gray-700 text-center">Supplier Dashboard</h1>
+    </header>
+
+    <!-- Search & Filter Form -->
+    <form method="get" class="w-full max-w-lg bg-white shadow-md rounded-lg p-6 mb-6">
+        <div class="flex flex-col gap-2">
+            <!-- Search Bar -->
+            <div>
+                <label for="search" class="block text-sm font-medium text-gray-600">Search Supplier</label>
+                <input 
+                    type="text" 
+                    id="search" 
+                    name="search" 
+                    placeholder="Enter supplier name"
+                    value="{{ search }}" 
+                    class="w-full px-4 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+            </div>
+
+            <!-- Filter Dropdown -->
+            <div>
+                <label for="filter_balance" class="block text-sm font-medium text-gray-600">Filter by Balance</label>
+                <select 
+                    id="filter_balance" 
+                    name="filter_balance" 
+                    class="w-full px-4 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    <option value="all" {% if filter_balance == 'all' %}selected{% endif %}>All</option>
+                    <option value="pending" {% if filter_balance == 'pending' %}selected{% endif %}>Pending Balance</option>
+                    <option value="settled" {% if filter_balance == 'settled' %}selected{% endif %}>Settled Balance</option>
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <button 
+                type="submit" 
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg shadow-md transition"
+            >
+                Apply Filters
+            </button>
+        </div>
+    </form>
+
+    <!-- Supplier List -->
+    <section class="w-full max-w-lg">
+        {% for supplier in suppliers %}
+        <div class="bg-white shadow-md rounded-lg p-6 mb-2">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-700">{{ supplier.supplier_name }}</h2>
+                    <p class="text-sm text-gray-500">
+                        Remaining Balance: 
+                        <span 
+                            class="{% if supplier.balance > 0 %}text-red-500{% else %}text-green-500{% endif %} font-bold"
+                        >
+                            ₹{{ supplier.balance }}
+                        </span>
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <a 
+                        href="/customer/edit/{{ supplier._id }}" 
+                        class="bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition"
+                    >
+                        Edit
+                    </a>
+                    <a 
+                        href="/customer/{{ supplier._id }}" 
+                        class="bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition"
+                    >
+                        View
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+
+    <!-- No Results Message -->
+    {% if not suppliers %}
+    <div class="w-full max-w-lg bg-white shadow-md rounded-lg p-6 text-center">
+        <p class="text-gray-500">No suppliers found.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
