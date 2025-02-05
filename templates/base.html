@@ -17,18 +17,8 @@
     </nav>
 
     <!-- Main content area -->
-    <main class="p-6">
-        {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-                <div class="space-y-4">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }} bg-yellow-200 text-yellow-800 p-4 rounded-lg shadow-md">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+    <main class="">
+        
 
         <!-- Content block -->
         {% block content %}
