@@ -47,6 +47,17 @@
             </button>
         </div>
     </form>
+    <!-- Total Balance Display -->
+    <br>
+<div class="w-full max-w-lg bg-white shadow-md rounded-lg p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-700 text-center">
+        Total Remaining Balance: 
+        <span class="{% if total_balance > 0 %}text-red-500{% else %}text-green-500{% endif %}">
+            ₹{{ total_balance }}
+        </span>
+    </h2>
+</div>
+
 
     <!-- Supplier List -->
     <section class="w-full max-w-lg">

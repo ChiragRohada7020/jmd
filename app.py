@@ -26,6 +26,7 @@ def home():
 
     # Fetch all suppliers matching the query
     suppliers = list(suppliers_collection.find(query))
+    total_balance = 0
 
     # Calculate remaining balance for each supplier
     for supplier in suppliers:
@@ -36,7 +37,9 @@ def home():
         total_debit = sum(t.get("debit", 0) for t in transactions)
         remaining_balance = total_credit - total_debit
 
-        supplier["balance"] = remaining_balance  # Add balance to each supplier dynamically
+        supplier["balance"] = remaining_balance 
+        total_balance += remaining_balance  # Sum up balance
+# Add balance to each supplier dynamically
 
     # Filter by balance if requested
     if filter_balance == "pending":
@@ -44,7 +47,7 @@ def home():
     elif filter_balance == "settled":
         suppliers = [s for s in suppliers if s["balance"] == 0]
 
-    return render_template("home.html", suppliers=suppliers, search=search, filter_balance=filter_balance)
+    return render_template("home.html", suppliers=suppliers, search=search, filter_balance=filter_balance,total_balance=total_balance)
 
 
 # Add a new supplier
@@ -136,7 +139,7 @@ def supplier_details(customer_id):
     elif transaction_type == "debit":
         query["debit"] = {"$gt": 0}
 
-    transactions = list(transactions_collection.find(query))
+    transactions = list(transactions_collection.find(query).sort("date", -1))
 
     total_credit = sum(t.get("credit", 0) for t in transactions)
     total_debit = sum(t.get("debit", 0) for t in transactions)
