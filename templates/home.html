@@ -62,6 +62,8 @@
     <!-- Supplier List -->
     <section class="w-full max-w-lg">
         {% for supplier in suppliers %}
+        <a 
+                        href="/customer/{{ supplier._id }}" >
         <div class="bg-white shadow-md rounded-lg p-6 mb-2">
             <div class="flex justify-between items-center">
                 <div>
@@ -91,6 +93,7 @@
                 </div>
             </div>
         </div>
+    </a>
         {% endfor %}
     </section>
 
