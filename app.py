@@ -136,7 +136,7 @@ def supplier_details(customer_id):
     elif transaction_type == "debit":
         query["debit"] = {"$gt": 0}
 
-    transactions = list(transactions_collection.find(query))
+    transactions = list(transactions_collection.find(query).sort("date", -1))
 
     total_credit = sum(t.get("credit", 0) for t in transactions)
     total_debit = sum(t.get("debit", 0) for t in transactions)
