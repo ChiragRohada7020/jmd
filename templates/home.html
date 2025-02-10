@@ -106,6 +106,8 @@
                         <th class="px-4 py-2">Supplier Name</th>
                         <th class="px-4 py-2">Balance</th>
                         <th class="px-4 py-2">Actions</th>
+                        <th class="px-4 py-2">Pdf</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -116,6 +118,12 @@
                         <td class="px-4 py-2">
                             <a href="{{ url_for('supplier_details', customer_id=supplier._id) }}" 
                                class="text-blue-500 hover:underline">Details</a>
+                        </td>
+                        <td class="px-6 py-4 text-sm">
+                            <a href="{{ url_for('generate_supplier_pdf', supplier_id=supplier._id) }}"
+                               class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                                Download PDF
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}

@@ -80,8 +80,7 @@ def home():
     ]))
 
     # Debug print to ensure the data is loaded properly
-    print("Today's Credit:", todays_credit)
-    print("Today's Debit:", todays_debit)
+  
     total_today_credit = sum(t.get("credit", 0) for t in todays_credit)
     total_today_debit = sum(t.get("debit", 0) for t in todays_debit)
 
@@ -336,6 +335,139 @@ def submit_transaction():
     }
     transactions_collection.insert_one(transaction)
     return redirect(url_for("home"))
+
+
+from flask import Flask, send_file
+from datetime import datetime
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from io import BytesIO
+from flask import send_file
+from datetime import datetime
+from bson import ObjectId
+
+@app.route('/generate_supplier_pdf/<supplier_id>', methods=['GET'])
+def generate_supplier_pdf(supplier_id):
+    try:
+        # Use supplier_id directly as a string
+        supplier = db.suppliers.find_one({"_id": ObjectId(supplier_id)})
+        if not supplier:
+            return "Supplier not found", 404
+
+        supplier_name = supplier.get('supplier_name', 'Unknown Supplier')
+
+        # Get the start of the current month
+        current_date = datetime.now()
+        start_of_month = datetime(current_date.year, current_date.month, 1).strftime('%Y-%m-%d')
+        month_name = current_date.strftime('%B %Y')  # e.g., February 2025
+
+        # Fetch transactions for the ongoing month
+        transactions = db.transactions.find({
+            "customer_id": supplier_id,  # Match customer_id to supplier _id as a string
+            "date": {"$gte": start_of_month}  # Compare string dates
+        })
+
+        # Initialize data for PDF
+        data = [["Date", "Description", "Debit (₹)", "Credit (₹)", "Running Total (₹)"]]
+        running_total = 0
+        total_debit = 0
+        total_credit = 0
+        transaction_found = False
+
+        for transaction in transactions:
+            transaction_found = True
+            date = transaction.get('date', 'Unknown Date')
+            description = transaction.get('description', '-')
+            debit = transaction.get('debit', 0.0)
+            credit = transaction.get('credit', 0.0)
+
+            # Update running totals
+            running_total += debit - credit
+            total_debit += debit
+            total_credit += credit
+
+            # Append transaction row
+            data.append([
+                date,
+                description,
+                f"{debit:.2f}",
+                f"{credit:.2f}",
+                f"{running_total:.2f}"
+            ])
+
+        # If no transactions found, add a default message
+        if not transaction_found:
+            data.append(["No transactions found for this month.", "", "", "", ""])
+
+        # Add totals row
+        if transaction_found:
+            data.append([
+                "",
+                "Total",
+                f"{total_debit:.2f}",
+                f"{total_credit:.2f}",
+                ""
+            ])
+
+        # Debug: Print the data being passed to the PDF
+        print("Data to be included in PDF:", data)
+
+        # Create the PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+        # Create a custom stylesheet
+        styles = getSampleStyleSheet()
+        heading_style = styles['Heading1']
+        heading_style.fontName = 'Helvetica-Bold'
+        heading_style.fontSize = 16
+        heading_style.alignment = 1  # Center alignment
+
+        subheading_style = styles['Heading2']
+        subheading_style.fontName = 'Helvetica-Bold'
+        subheading_style.fontSize = 14
+        subheading_style.alignment = 1  # Center alignment
+
+        # Title Header
+        title_header = Paragraph(f"<strong>{supplier_name}</strong> - <em>{month_name}</em>", heading_style)
+        subtitle_header = Paragraph("Transaction Report", subheading_style)
+        
+        # Table Data
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),  # Color for the table text
+            ('ALIGN', (2, 1), (3, -1), 'RIGHT'),  # Align the Debit and Credit columns to the right
+        ]))
+
+        # Elements to add
+        elements = [title_header, subtitle_header, table]
+
+        doc.build(elements)
+
+        # Send PDF as response
+        buffer.seek(0)
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"{supplier_name}_transactions_{current_date.strftime('%Y_%m')}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        return f"Error: {e}", 500
+
 
 
 if __name__ == '__main__':
