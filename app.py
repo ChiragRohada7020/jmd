@@ -316,22 +316,35 @@ def add_transaction():
         else:
             return render_template("add_transaction2.html", suppliers=[], selected_supplier=selected_supplier)
 
+from datetime import datetime
+
 @app.route("/submit_transaction", methods=["POST"])
 def submit_transaction():
     supplier_id = request.form.get("supplier_id")
     transaction_type = request.form.get("transaction_type")  # 'credit' or 'debit'
     amount = float(request.form.get("amount"))
     description = request.form.get("description")
+    date = request.form.get("date")
 
+    # If no date is provided, use today's date
+    if not date:
+        date = datetime.today().strftime("%Y-%m-%d")
+
+    # Create the transaction object
     transaction = {
         "customer_id": supplier_id,
-        "date": datetime.today().strftime("%Y-%m-%d"),
+        "date": date,
         "credit": amount if transaction_type == "credit" else 0,
         "debit": amount if transaction_type == "debit" else 0,
         "description": description,
     }
+
+    # Insert the transaction into the database
     transactions_collection.insert_one(transaction)
-    return redirect(url_for("home"))      
+
+    # Redirect back to home or supplier page
+    return redirect(url_for("home"))  # Change this as needed
+    
     
 
 from reportlab.lib.pagesizes import letter
@@ -382,7 +395,7 @@ def generate_supplier_pdf(supplier_id):
             transaction_link = url_for('view_transaction_details', transaction_id=str(transaction_id), _external=True)
 
             # Show only the transaction number in the PDF and make it a clickable link
-            transaction_number = f"#{transaction_id}"
+            transaction_number = f"{transaction_id}"
             description_link = f'<a href="{transaction_link}">{transaction_number}</a>'
 
             # Update running totals
