@@ -318,32 +318,6 @@ def add_transaction():
 
             
     
-
-@app.route("/submit_transaction", methods=["POST"])
-def submit_transaction():
-    supplier_id = request.form.get("supplier_id")
-    transaction_type = request.form.get("transaction_type")
-    amount = float(request.form.get("amount"))
-    description = request.form.get("description")
-
-    transaction = {
-        "customer_id": supplier_id,
-        "date": datetime.today().strftime("%Y-%m-%d"),
-        "credit": amount if transaction_type == "credit" else 0,
-        "debit": amount if transaction_type == "debit" else 0,
-        "description": description,
-    }
-    transactions_collection.insert_one(transaction)
-    return redirect(url_for("home"))
-
-
-from flask import Flask, send_file
-from datetime import datetime
-from io import BytesIO
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-from reportlab.lib import colors
-
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
@@ -446,8 +420,6 @@ def generate_supplier_pdf(supplier_id):
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 18),  # Set the font size for the whole table
-
             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
@@ -470,6 +442,8 @@ def generate_supplier_pdf(supplier_id):
         )
     except Exception as e:
         return f"Error: {e}", 500
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
