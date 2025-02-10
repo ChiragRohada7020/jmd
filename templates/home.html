@@ -83,8 +83,7 @@
                     {% for supplier in suppliers %}
                     <tr class="border-b">
                         <td class="px-4 py-2">{{ supplier.supplier_name }}</td>
-                        <td class="px-4 py-2">{{ supplier.contact }}</td>
-                        <td class="px-4 py-2">{{ supplier.email }}</td>
+                        
                         <td class="px-4 py-2">₹{{ supplier.balance }}</td>
                         <td class="px-4 py-2">
                             <a href="{{ url_for('supplier_details', customer_id=supplier._id) }}" 
