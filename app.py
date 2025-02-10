@@ -82,6 +82,12 @@ def home():
     # Debug print to ensure the data is loaded properly
     print("Today's Credit:", todays_credit)
     print("Today's Debit:", todays_debit)
+    total_today_credit = sum(t.get("credit", 0) for t in todays_credit)
+    total_today_debit = sum(t.get("debit", 0) for t in todays_debit)
+
+    # Calculate overall credit and debit
+    overall_credit = sum(t.get("credit", 0) for t in transactions_collection.find({}))
+    overall_debit = sum(t.get("debit", 0) for t in transactions_collection.find({}))
 
 
     return render_template(
@@ -92,7 +98,11 @@ def home():
         total_balance=total_balance,
         today_date=datetime.today(),
         todays_credit=todays_credit, 
-        todays_debit=todays_debit
+        todays_debit=todays_debit,
+        total_today_credit=total_today_credit,
+        total_today_debit=total_today_debit,
+        overall_credit=overall_credit,
+        overall_debit=overall_debit
     )
 
 

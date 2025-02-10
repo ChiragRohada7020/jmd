@@ -7,9 +7,10 @@
             <h1 class="text-2xl font-bold">Supplier Management</h1>
             <p class="text-gray-600">{{ today_date.strftime('%A, %d %B %Y') }}</p>
         </div>
+<br>
 
         <!-- Buttons -->
-        <div class="flex space-x-4 mb-4">
+        <div class="flex space-x-4 mb-4 justify-center mt-5">
             <a href="{{ url_for('add_transaction', type='credit') }}" 
                class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
                 Add Credit
@@ -19,15 +20,30 @@
                 Add Debit
             </a>
         </div>
-        
-        
+
+   
+
+        <!-- Overall Credit and Debit -->
+        <div class="mb-6">
+            <div class="grid grid-cols-2 gap-1">
+                <div class="bg-white shadow rounded-lg p-4">
+                    <h3 class="text-lg font-bold text-green-600 mb-2">Overall Credit</h3>
+                    <p class="text-xl font-semibold">₹{{ overall_credit }}</p>
+                </div>
+
+                <div class="bg-white shadow rounded-lg p-4">
+                    <h3 class="text-lg font-bold text-red-600 mb-2">Overall Debit</h3>
+                    <p class="text-xl font-semibold">₹{{ overall_debit }}</p>
+                </div>
+            </div>
+        </div>
 
         <!-- Today's Transactions -->
         <div class="mb-6">
             <h2 class="text-xl font-semibold mb-2">Today's Transactions</h2>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-1">
                 <!-- Credit Column -->
-                <div class="bg-white shadow rounded-lg p-4">
+                <div class="bg-red-100 shadow rounded-lg p-4">
                     <h3 class="text-lg font-bold text-green-600 mb-2">Credit Transactions</h3>
                     {% for transaction in todays_credit %}
                     <div class="mb-2 border-b pb-2">
@@ -39,13 +55,13 @@
                     <p class="text-gray-500">No credit transactions today.</p>
                     {% endfor %}
                 </div>
-                
 
                 <!-- Debit Column -->
-                <div class="bg-white shadow rounded-lg p-4">
+                <div class="bg-green-100 shadow rounded-lg p-4">
                     <h3 class="text-lg font-bold text-red-600 mb-2">Debit Transactions</h3>
                     {% for transaction in todays_debit %}
                     <div class="mb-2 border-b pb-2">
+                        <p><strong>Supplier:</strong> {{ transaction.supplier_info.supplier_name }}</p>
                         <p><strong>Description:</strong> {{ transaction.description }}</p>
                         <p><strong>Amount:</strong> ₹{{ transaction.debit }}</p>
                     </div>
@@ -54,7 +70,22 @@
                     {% endfor %}
                 </div>
             </div>
+            <div class="mb-1">
+                <div class="grid grid-cols-2 gap-1">
+                    <div class="bg-white shadow rounded-lg p-4">
+                        <h3 class="text-lg font-bold text-green-600 mb-2">Total Credit</h3>
+                        <p class="text-xl font-semibold">₹{{ total_today_credit }}</p>
+                    </div>
+    
+                    <div class="bg-white shadow rounded-lg p-4">
+                        <h3 class="text-lg font-bold text-red-600 mb-2">Total Debit</h3>
+                        <p class="text-xl font-semibold">₹{{ total_today_debit }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
+         <!-- Today's Transaction Totals -->
+         
 
         <!-- Suppliers Section -->
         <div>
@@ -73,7 +104,6 @@
                 <thead class="bg-gray-200">
                     <tr>
                         <th class="px-4 py-2">Supplier Name</th>
-                      
                         <th class="px-4 py-2">Balance</th>
                         <th class="px-4 py-2">Actions</th>
                     </tr>
@@ -82,7 +112,6 @@
                     {% for supplier in suppliers %}
                     <tr class="border-b">
                         <td class="px-4 py-2">{{ supplier.supplier_name }}</td>
-                        
                         <td class="px-4 py-2">₹{{ supplier.balance }}</td>
                         <td class="px-4 py-2">
                             <a href="{{ url_for('supplier_details', customer_id=supplier._id) }}" 
@@ -94,5 +123,4 @@
             </table>
         </div>
     </div>
-    {% endblock %}
-
+{% endblock %}
