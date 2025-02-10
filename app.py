@@ -19,6 +19,7 @@ transactions_collection = db["transactions"]
 def home():
     search = request.args.get("search", "")
     filter_balance = request.args.get("filter_balance", "all")
+    today_date = datetime.today().strftime("%Y-%m-%d")  # Get today's date in string format
 
     query = {}
     if search:
@@ -37,9 +38,8 @@ def home():
         total_debit = sum(t.get("debit", 0) for t in transactions)
         remaining_balance = total_credit - total_debit
 
-        supplier["balance"] = remaining_balance 
+        supplier["balance"] = remaining_balance
         total_balance += remaining_balance  # Sum up balance
-# Add balance to each supplier dynamically
 
     # Filter by balance if requested
     if filter_balance == "pending":
@@ -47,7 +47,53 @@ def home():
     elif filter_balance == "settled":
         suppliers = [s for s in suppliers if s["balance"] == 0]
 
-    return render_template("home.html", suppliers=suppliers, search=search, filter_balance=filter_balance,total_balance=total_balance)
+    # Fetch today's credit and debit transactions
+    
+    today = datetime.today().strftime("%Y-%m-%d")
+# Fetch today's credit and debit transactions
+    from bson import ObjectId
+
+    # Fetch today's credit transactions
+    todays_credit = list(transactions_collection.aggregate([
+        {"$match": {"date": today, "credit": {"$gt": 0}}},
+        {"$addFields": {"customer_id": {"$toObjectId": "$customer_id"}}},  # Convert customer_id to ObjectId
+        {"$lookup": {
+            "from": "suppliers",
+            "localField": "customer_id",
+            "foreignField": "_id",
+            "as": "supplier_info"
+        }},
+        {"$unwind": "$supplier_info"}  # Flatten the supplier info
+    ]))
+
+    # Fetch today's debit transactions
+    todays_debit = list(transactions_collection.aggregate([
+        {"$match": {"date": today, "debit": {"$gt": 0}}},
+        {"$addFields": {"customer_id": {"$toObjectId": "$customer_id"}}},  # Convert customer_id to ObjectId
+        {"$lookup": {
+            "from": "suppliers",
+            "localField": "customer_id",
+            "foreignField": "_id",
+            "as": "supplier_info"
+        }},
+        {"$unwind": "$supplier_info"}  # Flatten the supplier info
+    ]))
+
+    # Debug print to ensure the data is loaded properly
+    print("Today's Credit:", todays_credit)
+    print("Today's Debit:", todays_debit)
+
+
+    return render_template(
+        "home.html",
+        suppliers=suppliers,
+        search=search,
+        filter_balance=filter_balance,
+        total_balance=total_balance,
+        today_date=datetime.today(),
+        todays_credit=todays_credit, 
+        todays_debit=todays_debit
+    )
 
 
 # Add a new supplier
@@ -170,41 +216,7 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash
 from bson.objectid import ObjectId
 
-@app.route("/customer/<customer_id>/add_transaction", methods=["POST", "GET"])
-def add_transaction(customer_id):
-    # Get today's date as a datetime object
-    today_date = datetime.today()
 
-    if request.method == "POST":
-        description = request.form.get("description")
-        credit = float(request.form.get("credit", 0))
-        debit = float(request.form.get("debit", 0))
-        
-        # Use provided date or default to today's date
-        date = request.form.get("date") or today_date
-
-        transaction = {
-            "customer_id": customer_id,
-            "description": description,
-            "credit": credit,
-            "debit": debit,
-            "date": date
-        }
-
-        # Insert the transaction into the database
-        transactions_collection.insert_one(transaction)
-
-        # Update the supplier's balance
-        suppliers_collection.update_one(
-            {"_id": ObjectId(customer_id)},
-            {"$inc": {"balance": credit - debit}}  # Increment balance by credit and subtract debit
-        )
-
-        flash("Transaction added successfully!", "success")
-        return redirect(url_for("supplier_details", customer_id=customer_id))
-    
-    # Ensure to pass 'today_date' to the template
-    return render_template("supplier_details.html", today_date=today_date, customer_id=customer_id)
 
 
 
@@ -269,6 +281,51 @@ def delete_transaction(transaction_id):
     flash("Transaction deleted successfully!", "success")
     return redirect(url_for("supplier_details", customer_id=supplier_id))
 
+
+
+@app.route("/add_transaction", methods=["GET", "POST"])
+def add_transaction():
+    if request.method == "GET":
+        transaction_type = request.args.get("type", "credit")
+        search = request.args.get("search", "")
+        query = {}
+        if search:
+            query["supplier_name"] = {"$regex": search, "$options": "i"}
+        suppliers = list(suppliers_collection.find(query))
+        if transaction_type=="credit":
+            return render_template("add_transaction.html", suppliers=suppliers, search=search)
+        else:
+            return render_template("add_transaction2.html", suppliers=suppliers, search=search)
+
+    if request.method == "POST":
+        supplier_id = request.form.get("supplier_id")
+        selected_supplier = suppliers_collection.find_one({"_id": ObjectId(supplier_id)})
+        transaction_type = request.args.get("type", "credit")
+
+        if transaction_type=="credit":
+            return render_template("add_transaction.html", suppliers=[], selected_supplier=selected_supplier)
+        else:
+            return render_template("add_transaction2.html", suppliers=[], selected_supplier=selected_supplier)
+
+            
+    
+
+@app.route("/submit_transaction", methods=["POST"])
+def submit_transaction():
+    supplier_id = request.form.get("supplier_id")
+    transaction_type = request.form.get("transaction_type")
+    amount = float(request.form.get("amount"))
+    description = request.form.get("description")
+
+    transaction = {
+        "customer_id": supplier_id,
+        "date": datetime.today().strftime("%Y-%m-%d"),
+        "credit": amount if transaction_type == "credit" else 0,
+        "debit": amount if transaction_type == "debit" else 0,
+        "description": description,
+    }
+    transactions_collection.insert_one(transaction)
+    return redirect(url_for("home"))
 
 
 if __name__ == '__main__':

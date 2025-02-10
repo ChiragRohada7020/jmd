@@ -1,107 +1,100 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="bg-gray-100 min-h-screen flex flex-col items-center justify-center mt-0 pt-0 ">
+    <div class="container mx-auto p-4">
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold">Supplier Management</h1>
+            <p class="text-gray-600">{{ today_date.strftime('%A, %d %B %Y') }}</p>
+        </div>
 
-    <!-- Header -->
-    <header class="w-full max-w-lg bg-white shadow-md rounded-lg p-6 mb-6 ">
-        <h1 class="text-2xl font-bold text-gray-700 text-center">Supplier Dashboard</h1>
-    </header>
+        <!-- Buttons -->
+        <div class="flex space-x-4 mb-4">
+            <a href="{{ url_for('add_transaction', type='credit') }}" 
+               class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                Add Credit
+            </a>
+            <a href="{{ url_for('add_transaction', type='debit') }}" 
+               class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                Add Debit
+            </a>
+        </div>
+        
+        
 
-    <!-- Search & Filter Form -->
-    <form method="get" class="w-full max-w-lg bg-white shadow-md rounded-lg p-6 mb-6">
-        <div class="flex flex-col gap-2">
-            <!-- Search Bar -->
-            <div>
-                <label for="search" class="block text-sm font-medium text-gray-600">Search Supplier</label>
-                <input 
-                    type="text" 
-                    id="search" 
-                    name="search" 
-                    placeholder="Enter supplier name"
-                    value="{{ search }}" 
-                    class="w-full px-4 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+        <!-- Today's Transactions -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-2">Today's Transactions</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Credit Column -->
+                <div class="bg-white shadow rounded-lg p-4">
+                    <h3 class="text-lg font-bold text-green-600 mb-2">Credit Transactions</h3>
+                    {% for transaction in todays_credit %}
+                    <div class="mb-2 border-b pb-2">
+                        <p><strong>Supplier:</strong> {{ transaction.supplier_info.supplier_name }}</p>
+                        <p><strong>Description:</strong> {{ transaction.description }}</p>
+                        <p><strong>Amount:</strong> ₹{{ transaction.credit }}</p>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500">No credit transactions today.</p>
+                    {% endfor %}
+                </div>
+                
+
+                <!-- Debit Column -->
+                <div class="bg-white shadow rounded-lg p-4">
+                    <h3 class="text-lg font-bold text-red-600 mb-2">Debit Transactions</h3>
+                    {% for transaction in todays_debit %}
+                    <div class="mb-2 border-b pb-2">
+                        <p><strong>Description:</strong> {{ transaction.description }}</p>
+                        <p><strong>Amount:</strong> ₹{{ transaction.debit }}</p>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500">No debit transactions today.</p>
+                    {% endfor %}
+                </div>
             </div>
+        </div>
 
-            <!-- Filter Dropdown -->
-            <div>
-                <label for="filter_balance" class="block text-sm font-medium text-gray-600">Filter by Balance</label>
-                <select 
-                    id="filter_balance" 
-                    name="filter_balance" 
-                    class="w-full px-4 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+        <!-- Suppliers Section -->
+        <div>
+            <h2 class="text-xl font-semibold mb-2">Suppliers</h2>
+            <form class="mb-4 flex space-x-4">
+                <input type="text" name="search" placeholder="Search by supplier name" 
+                       value="{{ search }}" class="border rounded-lg px-4 py-2 w-full">
+                <select name="filter_balance" class="border rounded-lg px-4 py-2">
                     <option value="all" {% if filter_balance == 'all' %}selected{% endif %}>All</option>
                     <option value="pending" {% if filter_balance == 'pending' %}selected{% endif %}>Pending Balance</option>
                     <option value="settled" {% if filter_balance == 'settled' %}selected{% endif %}>Settled Balance</option>
                 </select>
-            </div>
-
-            <!-- Submit Button -->
-            <button 
-                type="submit" 
-                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg shadow-md transition"
-            >
-                Apply Filters
-            </button>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Filter</button>
+            </form>
+            <table class="table-auto w-full bg-white shadow rounded-lg">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="px-4 py-2">Supplier Name</th>
+                        <th class="px-4 py-2">Contact</th>
+                        <th class="px-4 py-2">Email</th>
+                        <th class="px-4 py-2">Balance</th>
+                        <th class="px-4 py-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supplier in suppliers %}
+                    <tr class="border-b">
+                        <td class="px-4 py-2">{{ supplier.supplier_name }}</td>
+                        <td class="px-4 py-2">{{ supplier.contact }}</td>
+                        <td class="px-4 py-2">{{ supplier.email }}</td>
+                        <td class="px-4 py-2">₹{{ supplier.balance }}</td>
+                        <td class="px-4 py-2">
+                            <a href="{{ url_for('supplier_details', customer_id=supplier._id) }}" 
+                               class="text-blue-500 hover:underline">Details</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    </form>
-    <!-- Total Balance Display -->
-    <br>
-<div class="w-full max-w-lg bg-white shadow-md rounded-lg p-6 mb-6">
-    <h2 class="text-xl font-bold text-gray-700 text-center">
-        Total Remaining Balance: 
-        <span class="{% if total_balance > 0 %}text-red-500{% else %}text-green-500{% endif %}">
-            ₹{{ total_balance }}
-        </span>
-    </h2>
-</div>
-
-
-    <!-- Supplier List -->
-    <section class="w-full max-w-lg">
-        {% for supplier in suppliers %}
-        <a 
-                        href="/customer/{{ supplier._id }}" >
-        <div class="bg-white shadow-md rounded-lg p-6 mb-2">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h2 class="text-lg font-bold text-gray-700">{{ supplier.supplier_name }}</h2>
-                    <p class="text-sm text-gray-500">
-                        Remaining Balance: 
-                        <span 
-                            class="{% if supplier.balance > 0 %}text-red-500{% else %}text-green-500{% endif %} font-bold"
-                        >
-                            ₹{{ supplier.balance }}
-                        </span>
-                    </p>
-                </div>
-                <div class="flex gap-2">
-                    <a 
-                        href="/customer/edit/{{ supplier._id }}" 
-                        class="bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition"
-                    >
-                        Edit
-                    </a>
-                    <a 
-                        href="/customer/{{ supplier._id }}" 
-                        class="bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition"
-                    >
-                        View
-                    </a>
-                </div>
-            </div>
-        </div>
-    </a>
-        {% endfor %}
-    </section>
-
-    <!-- No Results Message -->
-    {% if not suppliers %}
-    <div class="w-full max-w-lg bg-white shadow-md rounded-lg p-6 text-center">
-        <p class="text-gray-500">No suppliers found.</p>
     </div>
-    {% endif %}
-</div>
-{% endblock %}
+    {% endblock %}
+
