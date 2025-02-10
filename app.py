@@ -316,16 +316,31 @@ def add_transaction():
         else:
             return render_template("add_transaction2.html", suppliers=[], selected_supplier=selected_supplier)
 
-            
+@app.route("/submit_transaction", methods=["POST"])
+def submit_transaction():
+    supplier_id = request.form.get("supplier_id")
+    transaction_type = request.form.get("transaction_type")  # 'credit' or 'debit'
+    amount = float(request.form.get("amount"))
+    description = request.form.get("description")
+
+    transaction = {
+        "customer_id": supplier_id,
+        "date": datetime.today().strftime("%Y-%m-%d"),
+        "credit": amount if transaction_type == "credit" else 0,
+        "debit": amount if transaction_type == "debit" else 0,
+        "description": description,
+    }
+    transactions_collection.insert_one(transaction)
+    return redirect(url_for("home"))      
     
+
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import letter
 from io import BytesIO
-from flask import send_file
-from datetime import datetime
-from bson import ObjectId
+from flask import send_file, url_for
 
 @app.route('/generate_supplier_pdf/<supplier_id>', methods=['GET'])
 def generate_supplier_pdf(supplier_id):
@@ -362,15 +377,26 @@ def generate_supplier_pdf(supplier_id):
             debit = transaction.get('debit', 0.0)
             credit = transaction.get('credit', 0.0)
 
+            # Create a link for the transaction details
+            transaction_id = transaction.get('_id')
+            transaction_link = url_for('view_transaction_details', transaction_id=str(transaction_id), _external=True)
+
+            # Show only the transaction number in the PDF and make it a clickable link
+            transaction_number = f"#{transaction_id}"
+            description_link = f'<a href="{transaction_link}">{transaction_number}</a>'
+
             # Update running totals
             running_total += debit - credit
             total_debit += debit
             total_credit += credit
 
-            # Append transaction row
+            # Use Paragraph to render HTML for the description with the link
+            description_paragraph = Paragraph(description_link, getSampleStyleSheet()['Normal'])
+
+            # Append transaction row with Paragraph for description
             data.append([
                 date,
-                description,
+                description_paragraph,  # Paragraph with link
                 f"{debit:.2f}",
                 f"{credit:.2f}",
                 f"{running_total:.2f}"
@@ -415,7 +441,7 @@ def generate_supplier_pdf(supplier_id):
         
         # Table Data
         table = Table(data)
-        table.setStyle(TableStyle([
+        table.setStyle(TableStyle([  
             ('BACKGROUND', (0, 0), (-1, 0), colors.lavender),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -442,6 +468,24 @@ def generate_supplier_pdf(supplier_id):
         )
     except Exception as e:
         return f"Error: {e}", 500
+
+@app.route('/transaction_details/<transaction_id>', methods=['GET'])
+def view_transaction_details(transaction_id):
+    # Fetch the transaction from the database using the ID
+    transaction = db.transactions.find_one({"_id": ObjectId(transaction_id)})
+    if not transaction:
+        return "Transaction not found", 404
+
+    # Create a detailed view of the transaction (you can customize this)
+    transaction_details = f"""
+        <h2>Transaction Details</h2>
+        <p><strong>Date:</strong> {transaction.get('date', 'Unknown Date')}</p>
+        <p><strong>Description:</strong> {transaction.get('description', '-')}</p>
+        <p><strong>Debit:</strong> {transaction.get('debit', 0.0)}</p>
+        <p><strong>Credit:</strong> {transaction.get('credit', 0.0)}</p>
+        <p><strong>Running Total:</strong> {transaction.get('running_total', 0.0)}</p>
+    """
+    return transaction_details
 
 
 
